@@ -115,8 +115,9 @@ namespace GeraControleDeMalha
                                         string destino, DateTime blkt, string srvc)
         {
             RotationIN _rotRet = new RotationIN();
-            string _arqXML = ConfigurationManager.AppSettings.Get("AUX_BASES");
-            List<Bases> _ddsBases = new Bases()._carregaXMLbases(_arqXML);
+
+            DateTime teste = DateTime.Parse("24/04/2018 00:12:00");
+            DateTime hrVer = new Horarios().dtTObsb(teste);
 
             _rotRet.DtVoo = dtVoo;
             _rotRet.Subfleet = subflt;
@@ -130,8 +131,6 @@ namespace GeraControleDeMalha
             _rotRet.SrvcTP = srvc;
             return _rotRet;
         }
-
-
     }
     class TotRotation
     {

@@ -11,32 +11,67 @@ namespace GeraControleDeMalha
     {
         public List<RotationIN> ddsRotation() /// colocar parâmetros para limitar consulta por período.
         {
+            List<RotationIN> lstRET = new List<RotationIN>();
+            List<string> DadosNET = new List<string>();
             try
             {
                 string oraCONN = ConfigurationManager.ConnectionStrings["SchedOPS"].ConnectionString;
                 OracleConnection schCONN = new OracleConnection(oraCONN);
                 schCONN.Open();
+                try
+                {
+                    string _base = "CGH";
+                    DateTime DIAhOJE = DateTime.Now.Date;
+                    string _sqlCMD = "SELECT schops.TIME_ZONE, " +
+                                            "schops.COUNTRY_CODE, " +
+                                            "dstinfo.START_DATE_TIME, " +
+                                            "dstinfo.END_DATE_TIME, " +
+                                            "dstinfo.DIFF_LST_DST," +
+                                            "timezone.DIFF_UTC_LST " +
+                                     "FROM " +
+                                            "SCHEDOPS.AP_BASICS schops " +
+                                            "INNER JOIN NETBASE.DST_INFO dstinfo ON(schops.DST_ZONE_CODE = dstinfo.TIME_ZONE_CODE) " +
+                                            "INNER JOIN NETBASE.TIME_ZONE timezone ON(schops.DST_ZONE_CODE = timezone.TIME_ZONE_CODE) " +
+                                            "WHERE ((schops.IATA_AP_CODE = '" + _base + "') AND (dstinfo.START_DATE_TIME > '" +
+                        DIAhOJE.ToString("dd/MM/yyyy") + "') AND (ROWNUM = 1)) ORDER BY dstinfo.START_DATE_TIME DESC";
 
 
+                   string cmdTWO = "SELECT SCHEDOPS.LEG.Day_Of_Origin, SCHEDOPS.LEG.Ac_owner, SCHEDOPS.LEG.Ac_SubType, SCHEDOPS.LEG.AC_LOGICAL_NO, SCHEDOPS.LEG.Fn_Number, SCHEDOPS.LEG.Dep_AP_Sched, "
+                                 + "to_char(SCHEDOPS.LEG.Dep_Sched_DT, 'HH:MM:SS') STD, to_char(SCHEDOPS.LEG.Arr_Sched_DT, 'HH:MM:SS') STA, SCHEDOPS.LEG.Arr_AP_sched, "
+                                 + "SCHEDOPS.LEG.Flight_TM, SCHEDOPS.LEG.Leg_Type"
+                                 + "FROM SCHEDOPS.LEG WHERE (SCHEDOPS.LEG.Day_Of_Origin > '01/03/2018') ORDER BY SCHEDOPS.LEG.Ac_SubType, SCHEDOPS.LEG.ac_logical_no, SCHEDOPS.LEG.day_of_origin ASC;";
+
+
+
+                    OracleCommand cmd = new OracleCommand(_sqlCMD, schCONN);
+                    cmd.CommandType = CommandType.Text;
+                    OracleDataReader dr = cmd.ExecuteReader();
+                    Int32 columnCount = dr.FieldCount;
+                    while (dr.Read())
+                    {
+                        string ddsRetACM = _base;
+                        for (Int32 columnIndex = 0; columnIndex < columnCount; columnIndex++)
+                        {
+                            ddsRetACM = ddsRetACM + ";" + dr.GetValue(columnIndex).ToString();
+                            ///Console.WriteLine(dr.GetName(columnIndex) + ": " + dr.GetValue(columnIndex).ToString());
+                        }
+                        DadosNET.Add(ddsRetACM);
+                    }
+                    dr.Dispose();
+                    cmd.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    new GravaLog().GravaACT(string.Format("Erro ao consultar o banco SCHEDops - Erro : {0}", ex.Message));
+                }
+                schCONN.Close();
             }
             catch (Exception ex)
             {
-                new GravaLog().GravaACT("Erro ao Abrir acesso ao banco SCHEDops");
+                new GravaLog().GravaACT(string.Format("Erro ao Abrir acesso ao banco SCHEDops - Erro : {0}", ex.Message));
             }
-
-
-
-
-
-
-
-
-            List<RotationIN> lstRET = new List<RotationIN>();
-
-
             return lstRET;
         }
-
 
         public List<RotationIN> csvRotation()
         {

@@ -62,21 +62,24 @@ namespace GeraControleDeMalha
         }
         protected override void OnStart(string[] args)
         {
-            eventLog1.WriteEntry("In OnStart");
-            System.Timers.Timer timer = new System.Timers.Timer();
-            timer.Interval = 60000; // 60 seconds  
-            timer.Elapsed += new System.Timers.ElapsedEventHandler(this.OnTimer);
-            timer.Start();
-            // Update the service state to Start Pending.  
-            ServiceStatus serviceStatus = new ServiceStatus();
-            serviceStatus.dwCurrentState = ServiceState.SERVICE_START_PENDING;
-            serviceStatus.dwWaitHint = 100000;
-            SetServiceStatus(this.ServiceHandle, ref serviceStatus);
-            // Update the service state to Running.  
-            serviceStatus.dwCurrentState = ServiceState.SERVICE_RUNNING;
-            SetServiceStatus(this.ServiceHandle, ref serviceStatus);
+            eventLog1.WriteEntry("Processando");
+            //System.Timers.Timer timer = new System.Timers.Timer();
+            //timer.Interval = 60000; // 60 seconds  
+            //timer.Elapsed += new System.Timers.ElapsedEventHandler(this.OnTimer);
+            //timer.Start();
+            //// Update the service state to Start Pending.  
+            //ServiceStatus serviceStatus = new ServiceStatus();
+            //serviceStatus.dwCurrentState = ServiceState.SERVICE_START_PENDING;
+            //serviceStatus.dwWaitHint = 100000;
+            //SetServiceStatus(this.ServiceHandle, ref serviceStatus);
+            //// Update the service state to Running.  
+            //serviceStatus.dwCurrentState = ServiceState.SERVICE_RUNNING;
+            //SetServiceStatus(this.ServiceHandle, ref serviceStatus);
 
             List<RotationIN> lstTST = new Input().csvRotation();
+            //List<RotationIN> lstTST = new Input().ddsRotation();
+
+
 
         }
         private int eventId = 1;

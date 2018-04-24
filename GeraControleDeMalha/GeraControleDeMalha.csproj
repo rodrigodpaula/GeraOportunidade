@@ -63,6 +63,7 @@
       <DependentUpon>GeraControleMalha.cs</DependentUpon>
     </Compile>
     <Compile Include="GravaLog.cs" />
+    <Compile Include="Horarios.cs" />
     <Compile Include="Input.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="ProjectInstaller.cs">
