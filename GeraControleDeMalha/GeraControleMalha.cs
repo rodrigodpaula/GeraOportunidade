@@ -63,6 +63,11 @@ namespace GeraControleDeMalha
         protected override void OnStart(string[] args)
         {
             eventLog1.WriteEntry("Processando");
+
+            List<RotationIN> lstTST = new Input().csvRotation();
+            //List<RotationIN> lstTST = new Input().ddsRotation();
+
+            //função timer
             //System.Timers.Timer timer = new System.Timers.Timer();
             //timer.Interval = 60000; // 60 seconds  
             //timer.Elapsed += new System.Timers.ElapsedEventHandler(this.OnTimer);
@@ -75,12 +80,6 @@ namespace GeraControleDeMalha
             //// Update the service state to Running.  
             //serviceStatus.dwCurrentState = ServiceState.SERVICE_RUNNING;
             //SetServiceStatus(this.ServiceHandle, ref serviceStatus);
-
-            List<RotationIN> lstTST = new Input().csvRotation();
-            //List<RotationIN> lstTST = new Input().ddsRotation();
-
-
-
         }
         private int eventId = 1;
         protected override void OnStop()

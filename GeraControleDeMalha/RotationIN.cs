@@ -14,6 +14,8 @@ namespace GeraControleDeMalha
         private DateTime gt;
         private double thilho;
         private DateTime mgt;
+        private int temDLY;
+        private int temWKY;
 
         public RotationIN() { }
         public RotationIN(RotationIN arqIN)
@@ -110,14 +112,39 @@ namespace GeraControleDeMalha
                 mgt = value;
             }
         }
+        public int TemDLY
+        {
+            get
+            {
+                return temDLY;
+            }
+
+            set
+            {
+                temDLY = value;
+            }
+        }
+        public int TemWKY
+        {
+            get
+            {
+                return temWKY;
+            }
+
+            set
+            {
+                temWKY = value;
+            }
+        }
 
         public RotationIN montaRotation(DateTime dtVoo, string subflt, int rot, int nVoo, string origem, DateTime std, DateTime sta,
-                                        string destino, DateTime blkt, string srvc)
+                                        DateTime _dtStdBSB, DateTime _dtStaBSB, DateTime _dtStdLOC, DateTime _dtStaLOC, 
+                                        string destino, DateTime blkt, string srvc, int _anoMinVER)
         {
+            
             RotationIN _rotRet = new RotationIN();
 
-            DateTime teste = DateTime.Parse("24/04/2018 00:12:00");
-            DateTime hrVer = new Horarios().dtTObsb(teste);
+            ///colocar condições para contador de GT, TRILHO, GTMAX, DLY, WKLY
 
             _rotRet.DtVoo = dtVoo;
             _rotRet.Subfleet = subflt;
@@ -129,6 +156,9 @@ namespace GeraControleDeMalha
             _rotRet.Destino = destino;
             _rotRet.Blkt = blkt;
             _rotRet.SrvcTP = srvc;
+
+
+
             return _rotRet;
         }
     }

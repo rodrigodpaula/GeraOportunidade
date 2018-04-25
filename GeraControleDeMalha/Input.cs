@@ -4,6 +4,7 @@ using System.Configuration;
 using System.Collections.Generic;
 using System.Data;
 using Oracle.ManagedDataAccess.Client;
+using System.Linq;
 
 namespace GeraControleDeMalha
 {
@@ -72,7 +73,6 @@ namespace GeraControleDeMalha
             }
             return lstRET;
         }
-
         public List<RotationIN> csvRotation()
         {
             string _arqCSV = "";
@@ -96,6 +96,7 @@ namespace GeraControleDeMalha
                 Environment.Exit(1);
             }
             List<RotationIN> lstRET = new List<RotationIN>();
+            List<RotationIN> _tmpIN = new List<RotationIN>();
             try
             {
                 using (StreamReader sr = new StreamReader(_arqCSV))
@@ -106,20 +107,21 @@ namespace GeraControleDeMalha
                     {
                         try
                         {
+                            RotationIN tmpDados = new RotationIN();
                             String[] lstRotation = line.Split(';');
-                            DateTime dtVoo = DateTime.Parse(lstRotation[0]);
-                            string subflt = lstRotation[1].Trim().Substring(3, 3);
-                            int rot = int.Parse(lstRotation[2]);
-                            int nVoo = (lstRotation[3].Trim() != "") ? int.Parse(lstRotation[3].Trim()) : 0;
-                            string origem = lstRotation[4];
-                            DateTime stdHR = DateTime.Parse(lstRotation[5]);
-                            DateTime staHR = DateTime.Parse(lstRotation[6]);
-                            DateTime std = dtVoo.Date + stdHR.TimeOfDay;
-                            DateTime sta = dtVoo.Date + staHR.TimeOfDay;
-                            string destino = lstRotation[7];
-                            DateTime blkt = DateTime.Parse(lstRotation[8]);
-                            string srvc = lstRotation[9];
-                            lstRET.Add(new RotationIN().montaRotation(dtVoo, subflt, rot, nVoo, origem, std, sta, destino, blkt, srvc));
+                            tmpDados.DtVoo = DateTime.Parse(lstRotation[0]);
+                            tmpDados.Subfleet = lstRotation[1].Trim().Substring(3, 3);
+                            tmpDados.Rot = int.Parse(lstRotation[2]);
+                            tmpDados.NVoo = (lstRotation[3].Trim() != "") ? int.Parse(lstRotation[3].Trim()) : 0;
+                            tmpDados.Origem = lstRotation[4];
+                            DateTime stdHR = (lstRotation[5].Trim() == "24:00") ? DateTime.Parse("00:00") : DateTime.Parse(lstRotation[5]);
+                            DateTime staHR = (lstRotation[6].Trim() == "24:00") ? DateTime.Parse("00:00") : DateTime.Parse(lstRotation[6]);
+                            tmpDados.Std = tmpDados.DtVoo.Date + stdHR.TimeOfDay;
+                            tmpDados.Sta = tmpDados.DtVoo.Date + staHR.TimeOfDay;
+                            tmpDados.Destino = lstRotation[7];
+                            tmpDados.Blkt = DateTime.Parse(lstRotation[8]);
+                            tmpDados.SrvcTP = lstRotation[9];
+                            _tmpIN.Add(tmpDados);
                         }
                         catch (Exception)
                         {
@@ -132,6 +134,20 @@ namespace GeraControleDeMalha
             {
                 Console.WriteLine("The file could not be read:");
                 Console.WriteLine(e.Message);
+            }
+            ///carrega lista completa do rotation - colocar em sub externa - mudar somente qual a carga
+            int _anoMIN = _tmpIN.Select(x => x.DtVoo.Year).Min();
+            Horarios _cnvHorarios = new Horarios(_anoMIN);
+            foreach (RotationIN _tpROT in _tmpIN)
+            {
+
+                DateTime dtBSBdep = _cnvHorarios.dtTObsb(_tpROT.Std);
+                DateTime dtBSBarr = _cnvHorarios.dtTObsb(_tpROT.Sta);
+                DateTime dtLOCdep = _cnvHorarios.dtTOloc(_tpROT.Std, _tpROT.Origem);
+                DateTime dtLOCarr = _cnvHorarios.dtTOloc(_tpROT.Sta, _tpROT.Destino);
+
+                lstRET.Add(new RotationIN().montaRotation(_tpROT.DtVoo, _tpROT.Subfleet, _tpROT.Rot, _tpROT.NVoo, _tpROT.Origem, _tpROT.Std, _tpROT.Sta,
+                                                           dtBSBdep, dtBSBarr, dtLOCdep, dtLOCarr,  _tpROT.Destino, _tpROT.Blkt, _tpROT.SrvcTP, _anoMIN));
             }
             return lstRET;
         }
