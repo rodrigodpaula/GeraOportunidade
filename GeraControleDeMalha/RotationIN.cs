@@ -143,7 +143,6 @@ namespace GeraControleDeMalha
         {
             
             RotationIN _rotRet = new RotationIN();
-
             ///colocar condições para contador de GT, TRILHO, GTMAX, DLY, WKLY
 
             _rotRet.DtVoo = dtVoo;
@@ -156,8 +155,10 @@ namespace GeraControleDeMalha
             _rotRet.Destino = destino;
             _rotRet.Blkt = blkt;
             _rotRet.SrvcTP = srvc;
-
-
+            _rotRet.DtDEPstdBSB = _dtStdBSB;
+            _rotRet.DtARRstaBSB = _dtStaBSB;
+            _rotRet.DtDEPstdLOC = _dtStdLOC;
+            _rotRet.DtARRstaLOC = _dtStaLOC;
 
             return _rotRet;
         }

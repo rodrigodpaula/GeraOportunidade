@@ -37,8 +37,8 @@ namespace GeraControleDeMalha
     {
         [DllImport("advapi32.dll", SetLastError = true)]
         private static extern bool SetServiceStatus(IntPtr handle, ref ServiceStatus serviceStatus);
-        private IContainer componentes;
-        private EventLog logdevento;
+        //private IContainer componentes;
+        //private EventLog logdevento;
         public GeraControleMalha(string[] args)
         {
             InitializeComponent();
@@ -56,15 +56,18 @@ namespace GeraControleDeMalha
         public void RunAsConsole(string[] args)
         {
             OnStart(args);
-            Console.WriteLine("Press any key to exit...");
-            Console.ReadLine();
+            Console.WriteLine("Arquivo Processado");
             OnStop();
         }
         protected override void OnStart(string[] args)
         {
             eventLog1.WriteEntry("Processando");
+            if (args != null || args.Length != 0)
+            {
+                // colocar condição para valor passado no args
+            }
 
-            List<RotationIN> lstTST = new Input().csvRotation();
+            List<RotationIN> lstTST = new Input()._carregaROT();
             //List<RotationIN> lstTST = new Input().ddsRotation();
 
             //função timer
@@ -85,6 +88,7 @@ namespace GeraControleDeMalha
         protected override void OnStop()
         {
             eventLog1.WriteEntry("Controle de malha foi paradao.");
+            Environment.Exit(0);
         }
         protected override void OnContinue()
         {

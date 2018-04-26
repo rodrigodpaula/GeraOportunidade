@@ -5,12 +5,13 @@ using System.Collections.Generic;
 using System.Data;
 using Oracle.ManagedDataAccess.Client;
 using System.Linq;
+using System.Diagnostics;
 
 namespace GeraControleDeMalha
 {
     class Input
     {
-        public List<RotationIN> ddsRotation() /// colocar parâmetros para limitar consulta por período.
+        private List<RotationIN> ddsRotation(DateTime dtInicio, DateTime dtFim) /// colocar parâmetros para limitar consulta por período.
         {
             List<RotationIN> lstRET = new List<RotationIN>();
             List<string> DadosNET = new List<string>();
@@ -21,42 +22,41 @@ namespace GeraControleDeMalha
                 schCONN.Open();
                 try
                 {
-                    string _base = "CGH";
-                    DateTime DIAhOJE = DateTime.Now.Date;
-                    string _sqlCMD = "SELECT schops.TIME_ZONE, " +
-                                            "schops.COUNTRY_CODE, " +
-                                            "dstinfo.START_DATE_TIME, " +
-                                            "dstinfo.END_DATE_TIME, " +
-                                            "dstinfo.DIFF_LST_DST," +
-                                            "timezone.DIFF_UTC_LST " +
-                                     "FROM " +
-                                            "SCHEDOPS.AP_BASICS schops " +
-                                            "INNER JOIN NETBASE.DST_INFO dstinfo ON(schops.DST_ZONE_CODE = dstinfo.TIME_ZONE_CODE) " +
-                                            "INNER JOIN NETBASE.TIME_ZONE timezone ON(schops.DST_ZONE_CODE = timezone.TIME_ZONE_CODE) " +
-                                            "WHERE ((schops.IATA_AP_CODE = '" + _base + "') AND (dstinfo.START_DATE_TIME > '" +
-                        DIAhOJE.ToString("dd/MM/yyyy") + "') AND (ROWNUM = 1)) ORDER BY dstinfo.START_DATE_TIME DESC";
-
-
-                   string cmdTWO = "SELECT SCHEDOPS.LEG.Day_Of_Origin, SCHEDOPS.LEG.Ac_owner, SCHEDOPS.LEG.Ac_SubType, SCHEDOPS.LEG.AC_LOGICAL_NO, SCHEDOPS.LEG.Fn_Number, SCHEDOPS.LEG.Dep_AP_Sched, "
-                                 + "to_char(SCHEDOPS.LEG.Dep_Sched_DT, 'HH:MM:SS') STD, to_char(SCHEDOPS.LEG.Arr_Sched_DT, 'HH:MM:SS') STA, SCHEDOPS.LEG.Arr_AP_sched, "
-                                 + "SCHEDOPS.LEG.Flight_TM, SCHEDOPS.LEG.Leg_Type"
-                                 + "FROM SCHEDOPS.LEG WHERE (SCHEDOPS.LEG.Day_Of_Origin > '01/03/2018') ORDER BY SCHEDOPS.LEG.Ac_SubType, SCHEDOPS.LEG.ac_logical_no, SCHEDOPS.LEG.day_of_origin ASC;";
-
-
+                    string _sqlCMD = "SELECT SCHEDOPS.LEG.Day_Of_Origin, SCHEDOPS.LEG.Ac_owner, SCHEDOPS.LEG.Ac_SubType, SCHEDOPS.LEG.AC_LOGICAL_NO, SCHEDOPS.LEG.Fn_Number, SCHEDOPS.LEG.Dep_AP_Sched, "
+                                             + "to_char(SCHEDOPS.LEG.Dep_Sched_DT, 'HH24:MI:SS') STD, to_char(SCHEDOPS.LEG.Arr_Sched_DT, 'HH24:MI:SS') STA, SCHEDOPS.LEG.Arr_AP_sched, "
+                                             + "SCHEDOPS.LEG.Flight_TM, SCHEDOPS.LEG.Leg_Type "
+                                   + "FROM SCHEDOPS.LEG WHERE ((SCHEDOPS.LEG.leg_state <> 'CNL' AND SCHEDOPS.LEG.leg_type <> 'Z') AND (SCHEDOPS.LEG.Day_Of_Origin >= '" + dtInicio.Date.ToString("dd/MM/yyyy") + "' and SCHEDOPS.LEG.Day_Of_Origin <= '" + dtFim.Date.ToString("dd/MM/yyyy") + "')) "
+                                             + "ORDER BY SCHEDOPS.LEG.Ac_SubType, SCHEDOPS.LEG.ac_logical_no, SCHEDOPS.LEG.day_of_origin ASC";
 
                     OracleCommand cmd = new OracleCommand(_sqlCMD, schCONN);
                     cmd.CommandType = CommandType.Text;
                     OracleDataReader dr = cmd.ExecuteReader();
-                    Int32 columnCount = dr.FieldCount;
+                    Int32 cntReg = 0;
                     while (dr.Read())
                     {
-                        string ddsRetACM = _base;
-                        for (Int32 columnIndex = 0; columnIndex < columnCount; columnIndex++)
+                        try
                         {
-                            ddsRetACM = ddsRetACM + ";" + dr.GetValue(columnIndex).ToString();
-                            ///Console.WriteLine(dr.GetName(columnIndex) + ": " + dr.GetValue(columnIndex).ToString());
+                            RotationIN tmpDados = new RotationIN();
+                            tmpDados.DtVoo = DateTime.Parse(dr[0].ToString());
+                            tmpDados.Subfleet = dr[2].ToString();
+                            tmpDados.Rot = int.Parse(dr[3].ToString());
+                            tmpDados.NVoo = (dr[4].ToString().Trim() != "") ? int.Parse(dr[4].ToString().Trim()) : 0;
+                            tmpDados.Origem = dr[5].ToString().Trim() ;
+                            DateTime stdHR = (dr[6].ToString().Trim() == "24:00") ? DateTime.Parse("00:00") : DateTime.Parse(dr[6].ToString().Trim());
+                            DateTime staHR = (dr[7].ToString().Trim() == "24:00") ? DateTime.Parse("00:00") : DateTime.Parse(dr[7].ToString().Trim());
+                            tmpDados.Std = tmpDados.DtVoo.Date + stdHR.TimeOfDay;
+                            tmpDados.Sta = tmpDados.DtVoo.Date + staHR.TimeOfDay;
+                            tmpDados.Destino = dr[8].ToString().Trim();
+                            tmpDados.Blkt = new DateTime(TimeSpan.FromSeconds(int.Parse(dr[9].ToString().Trim())).Ticks);
+                            tmpDados.SrvcTP = dr[10].ToString().Trim();
+                            lstRET.Add(tmpDados);
+                            cntReg++;
                         }
-                        DadosNET.Add(ddsRetACM);
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine("Erro ao Ler Registro");
+                            new GravaLog().GravaACT(string.Format("Erro ao ler o registro : {0} - Erro : {1}", cntReg.ToString(), ex.Message));
+                        }
                     }
                     dr.Dispose();
                     cmd.Dispose();
@@ -73,7 +73,7 @@ namespace GeraControleDeMalha
             }
             return lstRET;
         }
-        public List<RotationIN> csvRotation()
+        private List<RotationIN> csvRotation()
         {
             string _arqCSV = "";
             string pstIN = ConfigurationManager.AppSettings.Get("IN");
@@ -135,21 +135,46 @@ namespace GeraControleDeMalha
                 Console.WriteLine("The file could not be read:");
                 Console.WriteLine(e.Message);
             }
-            ///carrega lista completa do rotation - colocar em sub externa - mudar somente qual a carga
-            int _anoMIN = _tmpIN.Select(x => x.DtVoo.Year).Min();
-            Horarios _cnvHorarios = new Horarios(_anoMIN);
-            foreach (RotationIN _tpROT in _tmpIN)
+            return _tmpIN;
+        }
+        public List<RotationIN> _carregaROT(DateTime dtInicio = default(DateTime), DateTime dtFim = default(DateTime))
+        {
+            ///fazer validação de parâmetro
+            dtInicio = new DateTime(DateTime.Now.Ticks);
+            dtFim = dtInicio.AddDays(31);
+
+            ///selecionar tipo de carregamento, se vis CSV ou BD
+            List<RotationIN> _retRotation = new List<RotationIN>();
+            ///carregamento pelo BD
+          //  List<RotationIN> ddsCarregados = ddsRotation(dtInicio, dtFim);
+            ///carregamento pelo CSV
+            List<RotationIN> ddsCarregados = _carregaROT(dtInicio, dtFim);
+            try
             {
+                int _anoMIN = ddsCarregados.Select(x => x.DtVoo.Year).Min();
+                Horarios _cnvHorarios = new Horarios(_anoMIN);
+                foreach (RotationIN _tpROT in ddsCarregados.OrderBy(x => x.Rot).ThenBy(d => d.DtDEPstdLOC).GroupBy(g => new { g.DtVoo, g.Rot })) /// ver possibilidade de blocar por grupo
+                {
 
-                DateTime dtBSBdep = _cnvHorarios.dtTObsb(_tpROT.Std);
-                DateTime dtBSBarr = _cnvHorarios.dtTObsb(_tpROT.Sta);
-                DateTime dtLOCdep = _cnvHorarios.dtTOloc(_tpROT.Std, _tpROT.Origem);
-                DateTime dtLOCarr = _cnvHorarios.dtTOloc(_tpROT.Sta, _tpROT.Destino);
+                    DateTime dtBSBdep = _cnvHorarios.dtTObsb(_tpROT.Std);
+                    DateTime dtBSBarr = _cnvHorarios.dtTObsb(_tpROT.Sta);
+                    DateTime dtLOCdep = _cnvHorarios.dtTOloc(_tpROT.Std, _tpROT.Origem);
+                    DateTime dtLOCarr = _cnvHorarios.dtTOloc(_tpROT.Sta, _tpROT.Destino);
 
-                lstRET.Add(new RotationIN().montaRotation(_tpROT.DtVoo, _tpROT.Subfleet, _tpROT.Rot, _tpROT.NVoo, _tpROT.Origem, _tpROT.Std, _tpROT.Sta,
-                                                           dtBSBdep, dtBSBarr, dtLOCdep, dtLOCarr,  _tpROT.Destino, _tpROT.Blkt, _tpROT.SrvcTP, _anoMIN));
+
+                    RotationIN _nvRot = new RotationIN().montaRotation(_tpROT.DtVoo, _tpROT.Subfleet, _tpROT.Rot, _tpROT.NVoo, _tpROT.Origem, _tpROT.Std, _tpROT.Sta,
+                                                               dtBSBdep, dtBSBarr, dtLOCdep, dtLOCarr, _tpROT.Destino, _tpROT.Blkt, _tpROT.SrvcTP, _anoMIN);
+
+                    _retRotation.Add(_nvRot);
+                }
+
             }
-            return lstRET;
+            catch (Exception ex)
+            {
+                Console.WriteLine("Erro ao processar Rotation " + ex.Message);
+            }
+            return _retRotation;
+
         }
     }
 }
