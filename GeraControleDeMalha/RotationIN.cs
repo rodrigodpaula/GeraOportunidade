@@ -143,9 +143,7 @@ namespace GeraControleDeMalha
         {
             
             RotationIN _rotRet = new RotationIN();
-            ///colocar condições para contador de GT, TRILHO, GTMAX, DLY, WKLY
-
-            _rotRet.DtVoo = dtVoo;
+           _rotRet.DtVoo = dtVoo;
             _rotRet.Subfleet = subflt;
             _rotRet.Rot = rot;
             _rotRet.NVoo = nVoo;
@@ -159,7 +157,7 @@ namespace GeraControleDeMalha
             _rotRet.DtARRstaBSB = _dtStaBSB;
             _rotRet.DtDEPstdLOC = _dtStdLOC;
             _rotRet.DtARRstaLOC = _dtStaLOC;
-
+            _rotRet.Mgt = (ConfigurationManager.AppSettings.Get("BASES_40MIN").IndexOf(_rotRet.Destino,0) > 0) ? DateTime.Parse("00:40:00") : DateTime.Parse("00:30:00");
             return _rotRet;
         }
     }

@@ -11,6 +11,7 @@ namespace GeraControleDeMalha
 {
     class Input
     {
+        private DateTime _dtHoje = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day);
         private List<RotationIN> ddsRotation(DateTime dtInicio, DateTime dtFim) /// colocar parâmetros para limitar consulta por período.
         {
             List<RotationIN> lstRET = new List<RotationIN>();
@@ -140,34 +141,45 @@ namespace GeraControleDeMalha
         public List<RotationIN> _carregaROT(DateTime dtInicio = default(DateTime), DateTime dtFim = default(DateTime))
         {
             ///fazer validação de parâmetro
-            dtInicio = new DateTime(DateTime.Now.Ticks);
-            dtFim = dtInicio.AddDays(31);
+            dtInicio = _dtHoje;
+             dtFim = dtInicio.AddDays(31);
 
             ///selecionar tipo de carregamento, se vis CSV ou BD
             List<RotationIN> _retRotation = new List<RotationIN>();
             ///carregamento pelo BD
-          //  List<RotationIN> ddsCarregados = ddsRotation(dtInicio, dtFim);
+            List<RotationIN> ddsCarregados = ddsRotation(dtInicio, dtFim);
             ///carregamento pelo CSV
-            List<RotationIN> ddsCarregados = _carregaROT(dtInicio, dtFim);
+            // List<RotationIN> ddsCarregados = csvRotation();
             try
-            {
+            {                   /////granularizar mais
                 int _anoMIN = ddsCarregados.Select(x => x.DtVoo.Year).Min();
                 Horarios _cnvHorarios = new Horarios(_anoMIN);
-                foreach (RotationIN _tpROT in ddsCarregados.OrderBy(x => x.Rot).ThenBy(d => d.DtDEPstdLOC).GroupBy(g => new { g.DtVoo, g.Rot })) /// ver possibilidade de blocar por grupo
+                foreach (var _LSTtpROT in ddsCarregados.OrderBy(x => x.DtVoo).ThenBy(d => d.Rot).GroupBy(g => new { g.DtVoo, g.Rot, g.Subfleet })) /// ver possibilidade de blocar por grupo
                 {
-
-                    DateTime dtBSBdep = _cnvHorarios.dtTObsb(_tpROT.Std);
-                    DateTime dtBSBarr = _cnvHorarios.dtTObsb(_tpROT.Sta);
-                    DateTime dtLOCdep = _cnvHorarios.dtTOloc(_tpROT.Std, _tpROT.Origem);
-                    DateTime dtLOCarr = _cnvHorarios.dtTOloc(_tpROT.Sta, _tpROT.Destino);
+                    int ttREG = _LSTtpROT.Count();
+                    for (int x=1;x<ttREG;x++)
+                    {
 
 
-                    RotationIN _nvRot = new RotationIN().montaRotation(_tpROT.DtVoo, _tpROT.Subfleet, _tpROT.Rot, _tpROT.NVoo, _tpROT.Origem, _tpROT.Std, _tpROT.Sta,
-                                                               dtBSBdep, dtBSBarr, dtLOCdep, dtLOCarr, _tpROT.Destino, _tpROT.Blkt, _tpROT.SrvcTP, _anoMIN);
 
-                    _retRotation.Add(_nvRot);
+                    }
+
+
+                    foreach (RotationIN _tpROT in _LSTtpROT) /// ver possibilidade de colcoar for next
+                    {
+                        DateTime dtBSBdep = _cnvHorarios.dtTObsb(_tpROT.Std);
+                        DateTime dtBSBarr = _cnvHorarios.dtTObsb(_tpROT.Sta);
+                        DateTime dtLOCdep = _cnvHorarios.dtTOloc(_tpROT.Std, _tpROT.Origem);
+                        DateTime dtLOCarr = _cnvHorarios.dtTOloc(_tpROT.Sta, _tpROT.Destino);
+
+                        RotationIN _nvRot = new RotationIN().montaRotation(_tpROT.DtVoo, _tpROT.Subfleet, _tpROT.Rot, _tpROT.NVoo, _tpROT.Origem, _tpROT.Std, _tpROT.Sta,
+                                                                    dtBSBdep, dtBSBarr, dtLOCdep, dtLOCarr, _tpROT.Destino, _tpROT.Blkt, _tpROT.SrvcTP, _anoMIN);
+
+                        _retRotation.Add(_nvRot);
+                    }
                 }
-
+                ///total de trilhos por dia
+                var _ttTrilhosDiaLOC = _retRotation.OrderBy(x => x.DtDEPstdLOC).GroupBy(d => d.DtDEPstdLOC).Select(s => new { DtVoo = s.Key, Cont = s.Select(r => new { r.Rot, r.Subfleet }).Distinct().Count() });
             }
             catch (Exception ex)
             {
